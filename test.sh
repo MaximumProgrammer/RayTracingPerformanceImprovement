@@ -24,12 +24,12 @@ time ./raytracersqrtO3
 
 echo "Standard Test with different Compiler Optimiziations and improved SQRT + Multithreading"
 
-c++ -o raytraceroptO1 -O1 -Wall -ffast-math -mtune=native raytraceropt.cpp
+c++ -o raytraceroptO1 -O1 -Wall -ffast-math -mtune=native -msse4.1  raytraceropt.cpp
 time ./raytraceroptO1
 
-c++ -o raytraceroptO2 -O2 -Wall -ffast-math -mtune=native raytraceropt.cpp
+c++ -o raytraceroptO2 -O2 -Wall -ffast-math -mtune=native -msse4.1  raytraceropt.cpp
 time ./raytraceroptO2
 
-c++ -o raytraceroptO3 -O3 -Wall -ffast-math -mtune=native raytraceropt.cpp
+c++ -o raytraceroptO3 -O3 -Wall -ffast-math -mtune=native -msse4.1  raytraceropt.cpp
 time ./raytraceroptO3
-
+ 

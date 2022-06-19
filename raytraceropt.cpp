@@ -28,7 +28,8 @@
 #include <iostream>
 #include <cassert>
 #include <future>
-
+#include <xmmintrin.h> 
+#include <x86intrin.h>
 
 #if defined __linux__ || defined __APPLE__
 // "Compiled for Linux
@@ -69,6 +70,26 @@ static float inline sqrtFast(const float x)
   return *(float*) &i;
 }
 
+static float inline dotProductFast( const float* p1, const float* p2, size_t count )
+{
+	assert( 0 == count % 4 );
+
+	__m128 acc = _mm_setzero_ps();
+	const float* const p1End = p1 + count;
+	for( ; p1 < p1End; p1 += 4, p2 += 4 )
+	{
+		// Load 2 vectors, 4 floats / each
+		const __m128 a = _mm_loadu_ps( p1 );
+		const __m128 b = _mm_loadu_ps( p2 );
+		// Compute dot product of them. The 0xFF constant means "use all 4 source lanes, and broadcast the result into all 4 lanes of the destination".
+		const __m128 dp = _mm_dp_ps( a, b, 0xFF );
+		acc = _mm_add_ps( acc, dp );
+	}
+	// By the way, the intrinsic below compiles into no instructions.
+	// When a function is returning a float, modern compilers pass the return value in the lowest lane of xmm0 vector register.
+	return _mm_cvtss_f32( acc );
+}
+
 template<typename T>
 class Vec3
 {
@@ -94,7 +115,13 @@ public:
     Vec3<T>& operator += (const Vec3<T> &v) { x += v.x, y += v.y, z += v.z; return *this; }
     Vec3<T>& operator *= (const Vec3<T> &v) { x *= v.x, y *= v.y, z *= v.z; return *this; }
     Vec3<T> operator - () const { return Vec3<T>(-x, -y, -z); }
-    T length2() const { return x * x + y * y + z * z; }
+    T length2() const { 
+            /*const std::array<const float,4> X {x,y,z,0};
+            const std::array<const float,4> Y {x,y,z,0};	    
+	    
+	    return dotProductFast(&X[0],&Y[0],4);*/
+	    return (x*x+y*y+z*z);
+            }
     T length() const { return sqrtFast(length2()); }
     friend std::ostream & operator << (std::ostream &os, const Vec3<T> &v)
     {
@@ -316,7 +343,7 @@ int main(const int argc, const char **argv)
     // light
     spheres.push_back(Sphere(Vec3f( 0.0,     20, -30),     3, Vec3f(0.00, 0.00, 0.00), 0, 0.0, Vec3f(3)));
     
-    decltype(auto) image = render(spheres);
+    decltype(auto) image = render(spheres, 4*640, 4*480, false);
     
     if(image != nullptr){
       delete [] image;
